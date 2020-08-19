@@ -7,6 +7,7 @@ app.use(cors())
 //this allows us to use the json-parser, which allows us to 
 // get data from the body property of the request object
 app.use(express.json())
+app.use(express.static('build'))
 
 
 let notes = [
