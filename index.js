@@ -2,11 +2,13 @@
 const express = require('express')
 const app = express()
 const cors = require('cors')
-app.use(cors())
 app.use(express.static('build'))
+app.use(cors())
+
 //this allows us to use the json-parser, which allows us to 
 // get data from the body property of the request object
 app.use(express.json())
+
 
 
 
