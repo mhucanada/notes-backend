@@ -1,10 +1,13 @@
 //This line imports Node's built in web server module
+require('dotenv').config()
 const express = require('express')
 const app = express()
 const cors = require('cors')
+const Note = require('./models/note')
+const { response } = require('express')
+
 app.use(express.static('build'))
 app.use(cors())
-
 //this allows us to use the json-parser, which allows us to 
 // get data from the body property of the request object
 app.use(express.json())
@@ -44,29 +47,13 @@ const app = http.createServer((request, response) => {
   })
 */
 
-app.get('/', (req, res) => {
-  res.send('<h1>Hello World!</h1>')
-})
 
-app.get('/api/notes', (req, res) => {
-  res.json(notes)
-})
 
 // the id is a parameter, so it needs the colon in front of it
-app.get('/api/notes/:id', (request, response) => {
-  // the id given is a string, so we must convert it to an int
-  const id = Number(request.params.id)
-  console.log(id)
-  const note = notes.find(note => {
-    console.log(note.id, typeof note.id, id, typeof id, note.id === id)
-    return note.id === id
+app.get('/api/notes', (request, response) => {
+  Note.find({}).then(notes => {
+    response.json(notes)
   })
-  console.log(note)
-  if (note) {
-    response.json(note)
-  } else {
-    response.status(404).end()
-  }
 })
 
 app.delete('/api/notes/:id', (request, response) => {
@@ -78,36 +65,32 @@ app.delete('/api/notes/:id', (request, response) => {
   response.status(204).end()
 })
 
-const generateId = () => {
-  const maxId = notes.length > 0
-    // the ... syntax turns the array of numbers into individual numbers
-    ? Math.max(...notes.map(n => n.id))
-    : 0
-
-  return maxId + 1
-}
+app.get('/api/notes/:id', (request, reponse) => {
+  Note.findById(request.params.id).then(note => {
+    response.json(note)
+  })
+})
 
 app.post('/api/notes', (request, response) => {
   const body = request.body
 
-  if (!body.content) {
+  if (body.content === undefined) {
     return response.status(400).json({
       error: 'content missing'
     })
   }
 
   // this ensures that only the content we want is saved into the notes
-  const note = {
+  const note = new Note({
     content: body.content,
     important: body.important || false,
     date: new Date(),
-    id: generateId()
-  }
+  })
 
 
-  notes = notes.concat(note)
-  console.log(note)
-  response.json(note)
+  note.save().then(savedNote => {
+    response.json(savedNote)
+  })
 })
 
 const unknownEndpoint = (request, response) => {
@@ -120,7 +103,7 @@ app.use(unknownEndpoint)
 this part binds the http server assigned to the app variable, and to listen to 
 all http requests sent to the port 3001
 */
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
