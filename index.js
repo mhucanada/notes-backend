@@ -1,40 +1,19 @@
 //This line imports Node's built in web server module
-require('dotenv').config()
 const express = require('express')
 const app = express()
-const cors = require('cors')
+require('dotenv').config()
 const Note = require('./models/note')
-const { response } = require('express')
+const cors = require('cors')
 
-app.use(express.static('build'))
+
 app.use(cors())
+app.use(express.json())
+app.use(express.static('build'))
+
 //this allows us to use the json-parser, which allows us to 
 // get data from the body property of the request object
-app.use(express.json())
 
 
-
-
-let notes = [
-  {
-    id: 1,
-    content: "HTML is easy",
-    date: "2019-05-30T17:30:31.098Z",
-    important: true
-  },
-  {
-    id: 2,
-    content: "Browser can execute only Javascript",
-    date: "2019-05-30T18:39:34.091Z",
-    important: false
-  },
-  {
-    id: 3,
-    content: "GET and POST are the most important methods of HTTP protocol",
-    date: "2019-05-30T19:20:14.298Z",
-    important: true
-  }
-]
 /* 
 This uses the createServer method of the http module to create
 a new web server. An event handler is registered to the server, which is called
@@ -52,30 +31,7 @@ const app = http.createServer((request, response) => {
 // the id is a parameter, so it needs the colon in front of it
 app.get('/api/notes', (request, response) => {
   Note.find({}).then(notes => {
-    response.json(notes)
-  })
-})
-
-app.delete('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  notes = notes.filter(note => note.id !== id)
-
-  // to check that this is working, send a delete req through REST extension 
-  // and make sure the status message is right
-  response.status(204).end()
-})
-
-app.get('/api/notes/:id', (request, response) => {
-  Note.findById(request.params.id).then(note => {
-    if (note) {
-      response.json(note)
-    } else {
-      response.status(404).end()
-    }
-  })
-  .catch(error => {
-    console.log(error)
-    response.status(400).send({ error: 'malformatted id' })
+    response.json(notes.map(note => note.toJSON()))
   })
 })
 
@@ -97,8 +53,43 @@ app.post('/api/notes', (request, response) => {
 
 
   note.save().then(savedNote => {
-    response.json(savedNote)
+    response.json(savedNote.toJSON())
   })
+})
+
+app.delete('/api/notes/:id', (request, response) => {
+  Note.findByIdAndRemove(request.params.id)
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
+
+app.get('/api/notes/:id', (request, response, next) => {
+  Note.findById(request.params.id).then(note => {
+    if (note) {
+      response.json(note.toJSON())
+    } else {
+      response.status(404).end()
+    }
+  })
+    .catch(error => next(error))
+})
+
+
+app.put('/api/notes/:id', (request, response, next) => {
+  const body = request.body
+
+  const note = {
+    content: body.content,
+    important: body.important,
+  }
+
+  Note.findByIdAndUpdate(request.params.id, note, { new: true })
+    .then(updatedNote => {
+      response.json(updatedNote.toJSON())
+    })
+    .catch(error => next(error))
 })
 
 const unknownEndpoint = (request, response) => {
@@ -106,6 +97,17 @@ const unknownEndpoint = (request, response) => {
 }
 
 app.use(unknownEndpoint)
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  }
+
+  next(error)
+}
+app.use(errorHandler)
 
 /* 
 this part binds the http server assigned to the app variable, and to listen to 
