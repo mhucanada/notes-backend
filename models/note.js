@@ -1,26 +1,20 @@
 const mongoose = require('mongoose')
+
 mongoose.set('useFindAndModify', false)
-// eslint-disable-next-line no-undef
-const url = process.env.MONGODB_URI
-
-console.log('connecting to', url)
-
-mongoose
-	.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
-	.then(() => {
-		console.log('connected to MongoDB')
-	})
-	.catch((error) => {
-		console.log('error connecting to MongoDB:', error.message)
-	})
 
 const noteSchema = new mongoose.Schema({
-	content: String,
-	date: Date,
+	content: {
+		type: String,
+		required: true,
+		minlength: 5,
+	},
+	date: {
+		type: Date,
+		required: true,
+	},
 	important: Boolean,
 })
 
-//changes the _id to a string, since it's an object at first
 noteSchema.set('toJSON', {
 	transform: (document, returnedObject) => {
 		returnedObject.id = returnedObject._id.toString()
