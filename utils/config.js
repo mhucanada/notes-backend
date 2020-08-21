@@ -1,4 +1,6 @@
 /* eslint-disable no-undef */
+
+//this file handles all of the .env variables and exports it
 require('dotenv').config()
 
 const PORT = process.env.PORT

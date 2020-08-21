@@ -1,3 +1,5 @@
+// this is all of the route handlers, which are mini apps that just handle routing
+
 const notesRouter = require('express').Router()
 const Note = require('../models/note')
 
